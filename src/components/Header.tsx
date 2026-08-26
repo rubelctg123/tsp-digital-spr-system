@@ -54,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="hidden md:block">
                 <div className="text-xs font-bold text-white leading-tight flex items-center gap-1.5">
                   {currentUser.name}
-                  {currentUser.role === 'admin' && (
+                  {(currentUser.role === 'admin' || currentUser.email?.toLowerCase() === 'admin@tsp.gov.bd' || currentUser.email?.toLowerCase() === 'rubelctg1237@gmail.com') && (
                     <span className="px-1.5 py-0.2 bg-amber-300 text-emerald-950 rounded text-[9px] uppercase font-extrabold">
                       Admin
                     </span>

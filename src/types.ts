@@ -78,15 +78,23 @@ export interface SprItem {
 export interface SprRecord {
   id: string;
   sprNo: string; // e.g. SPR-2026-0001 or TSP/MPIC(PA)/2024-081
-  refNo: string; // সূত্র নং: টিএসপি/এমপিআইসি (পিএণ্ড) / ...
+  refNo?: string; // সূত্র নং: টিএসপি/এমপিআইসি (পিএণ্ড) / ...
   date: string; // e.g. 2026-08-20 or 20/08/2026
-  fiscalYear: string; // e.g. ২০২৪-২০২৫ খ্রি. or 2025-2026
-  procurementType: string; // স্থানীয় / বৈদেশিক (Local / Foreign)
-  subject: string; // প্রসঙ্গ e.g. বৈদ্যুতিক মালামাল ক্রয়
+  fiscalYear?: string; // e.g. ২০২৪-২০২৫ খ্রি. or 2025-2026
+  procurementType?: string; // স্থানীয় / বৈদেশিক (Local / Foreign)
+  subject?: string; // প্রসঙ্গ e.g. বৈদ্যুতিক মালামাল ক্রয়
   department: string;
-  preparedBy: string; // User Name
-  preparedByUserId: string; // User ID e.g. USER-001
-  preparedByEmail: string;
+  preparedBy?: string; // User Name
+  preparedByUserId?: string; // User ID e.g. USER-001
+  preparedByEmail?: string;
+  indentorName?: string;
+  indentorDesignation?: string;
+  estimatedCost?: string;
+  budgetCode?: string;
+  justification?: string;
+  purchaseReason?: string;
+  deliveryLocation?: string;
+  deliveryDays?: string;
   items: SprItem[];
   grandTotal: number;
   inWords?: string;

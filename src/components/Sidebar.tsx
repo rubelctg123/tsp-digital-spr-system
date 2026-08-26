@@ -25,7 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
   onLogout,
 }) => {
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin = currentUser.role === 'admin' || currentUser.email?.toLowerCase() === 'admin@tsp.gov.bd' || currentUser.email?.toLowerCase() === 'rubelctg1237@gmail.com';
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 min-h-[calc(100vh-4rem)] p-4 no-print select-none">

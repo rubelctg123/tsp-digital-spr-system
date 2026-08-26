@@ -34,7 +34,7 @@ interface MaterialMasterProps {
 }
 
 export const MaterialMaster: React.FC<MaterialMasterProps> = ({ currentUser }) => {
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin = currentUser.role === 'admin' || currentUser.email?.toLowerCase() === 'admin@tsp.gov.bd' || currentUser.email?.toLowerCase() === 'rubelctg1237@gmail.com';
   const [materials, setMaterials] = useState<Material[]>(() => AppStore.getMaterials());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
