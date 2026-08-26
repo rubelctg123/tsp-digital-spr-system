@@ -720,8 +720,8 @@ export class AppStore {
           let pUid = (row.prepared_by_user_id || row.preparedByUserId || '').trim();
           let pEmail = (row.prepared_by_email || row.preparedByEmail || '').trim();
 
+          const cachedUsers = this.getUsers();
           if (!pBy || !pUid) {
-            const cachedUsers = this.getUsers();
             if (pUid) {
               const matched = cachedUsers.find((u) => u.userId?.toLowerCase() === pUid.toLowerCase());
               if (matched) {
@@ -735,15 +735,33 @@ export class AppStore {
                 pUid = pUid || matched.userId;
               }
             }
-            if (!pBy && (row.indentor_name || row.indentorName)) {
+
+            // Special historical check for known SPRs
+            const sNo = (row.spr_no || row.sprNo || '').trim();
+            if (!pBy && (sNo === 'SPR-2026-00127' || sNo === 'SPR-2026-00128' || row.department === 'Electrical Maintenance')) {
+              pBy = 'Md. Rubel Hossain';
+              pUid = 'USER-002';
+              pEmail = 'rubelctg1237@gmail.com';
+            } else if (!pBy && (row.indentor_name || row.indentorName)) {
               pBy = (row.indentor_name || row.indentorName).trim();
-              pUid = pUid || 'USER-001';
+              const matched = cachedUsers.find((u) => u.name?.toLowerCase() === pBy.toLowerCase());
+              pUid = matched?.userId || 'USER-002';
+              pEmail = matched?.email || 'rubelctg1237@gmail.com';
             }
-            if (!pBy) {
-              const cur = this.getCurrentUser();
-              pBy = cur?.name || 'Md. Jalel Ahmed';
-              pUid = pUid || cur?.userId || 'USER-001';
-              pEmail = pEmail || cur?.email || 'admin@tsp.gov.bd';
+
+            // If Supabase row was missing preparer columns, heal it in Supabase directly
+            if ((!row.prepared_by || !row.prepared_by_user_id) && row.id && pBy && pUid) {
+              try {
+                supabase
+                  .from('spr_records')
+                  .update({
+                    prepared_by: pBy,
+                    prepared_by_user_id: pUid,
+                    prepared_by_email: pEmail,
+                  })
+                  .eq('id', row.id)
+                  .then(() => {}, () => {});
+              } catch {}
             }
           }
 
@@ -1818,14 +1836,19 @@ export class AppStore {
             const matched = userMap.get(pEmail.toLowerCase())!;
             pBy = pBy || matched.name;
             pUid = pUid || matched.userId;
+          } else if (s.sprNo === 'SPR-2026-00127' || s.sprNo === 'SPR-2026-00128' || s.department === 'Electrical Maintenance') {
+            pBy = 'Md. Rubel Hossain';
+            pUid = 'USER-002';
+            pEmail = 'rubelctg1237@gmail.com';
           } else if (s.indentorName && s.indentorName.trim()) {
             pBy = s.indentorName.trim();
-            pUid = pUid || 'USER-001';
+            const matched = cachedUsers.find((u) => u.name?.toLowerCase() === pBy.toLowerCase());
+            pUid = matched?.userId || 'USER-002';
+            pEmail = matched?.email || 'rubelctg1237@gmail.com';
           } else {
-            const cur = this.getCurrentUser();
-            pBy = cur?.name || 'Md. Jalel Ahmed';
-            pUid = cur?.userId || 'USER-001';
-            pEmail = cur?.email || 'admin@tsp.gov.bd';
+            pBy = 'Md. Rubel Hossain';
+            pUid = 'USER-002';
+            pEmail = 'rubelctg1237@gmail.com';
           }
           modified = true;
           return {
@@ -1892,9 +1915,25 @@ export class AppStore {
     const inWordsBn = numberToWordsBengali(grandTotal);
 
     const curUser = this.getCurrentUser();
-    const preparedBy = (sprData.preparedBy || curUser?.name || 'Md. Jalel Ahmed').trim();
-    const preparedByUserId = (sprData.preparedByUserId || curUser?.userId || 'USER-001').trim();
-    const preparedByEmail = (sprData.preparedByEmail || curUser?.email || 'admin@tsp.gov.bd').trim();
+    let preparedBy = sprData.preparedBy ? sprData.preparedBy.trim() : '';
+    let preparedByUserId = sprData.preparedByUserId ? sprData.preparedByUserId.trim() : '';
+    let preparedByEmail = sprData.preparedByEmail ? sprData.preparedByEmail.trim() : '';
+
+    if (!preparedBy || !preparedByUserId) {
+      if (isEdit) {
+        const existing = this.getSprById(sprData.id || sprData.sprNo || '');
+        if (existing) {
+          preparedBy = preparedBy || existing.preparedBy || '';
+          preparedByUserId = preparedByUserId || existing.preparedByUserId || '';
+          preparedByEmail = preparedByEmail || existing.preparedByEmail || '';
+        }
+      }
+      if (!preparedBy || !preparedByUserId) {
+        preparedBy = preparedBy || curUser?.name || 'Md. Rubel Hossain';
+        preparedByUserId = preparedByUserId || curUser?.userId || 'USER-002';
+        preparedByEmail = preparedByEmail || curUser?.email || 'rubelctg1237@gmail.com';
+      }
+    }
 
     const fullSpr: SprRecord = {
       id: targetId,

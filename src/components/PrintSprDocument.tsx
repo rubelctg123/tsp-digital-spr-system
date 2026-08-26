@@ -95,7 +95,7 @@ export const PrintSprDocument: React.FC<PrintSprDocumentProps> = ({ spr, onBack 
               SPR No: <span className="font-bold text-slate-950 font-mono text-sm">{spr.sprNo}</span>
             </p>
             <p className="text-xs text-slate-600">
-              User ID: <span className="font-mono font-semibold text-slate-800">{spr.preparedByUserId || 'USER-001'}</span>
+              User ID: <span className="font-mono font-semibold text-slate-800">{spr.preparedByUserId || '-'}</span>
             </p>
           </div>
 
@@ -269,7 +269,7 @@ export const PrintSprDocument: React.FC<PrintSprDocumentProps> = ({ spr, onBack 
             <div className="flex flex-col justify-between h-28 p-1.5 pb-1">
               <span className="text-[11px] leading-tight font-bold">প্রস্তুতকারীর সহি</span>
               <div className="text-[10px] text-slate-800 font-normal leading-tight mt-auto pb-0.5">
-                <p className="font-bold text-slate-950">{spr.preparedBy || 'Md. Jalel Ahmed'} ({spr.preparedByUserId || 'USER-001'})</p>
+                <p className="font-bold text-slate-950">{spr.preparedBy || 'Prepared By'} {spr.preparedByUserId ? `(${spr.preparedByUserId})` : ''}</p>
                 <p className="text-[9.5px] mt-0.5 text-slate-600">তাং- {formattedDate}</p>
               </div>
             </div>

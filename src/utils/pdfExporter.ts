@@ -158,7 +158,7 @@ export function generateSprHtml(spr: SprRecord): string {
           <td style="width: 25%; vertical-align: top; font-size: 12px; line-height: 1.5;">
             <p style="font-weight: bold; margin: 0; color: #0f172a;">সূত্র নং- ${spr.refNo || 'টিএসপি/এমপিআইসি (পিএণ্ড) / ------------'}</p>
             <p style="margin: 4px 0 0 0; color: #334155; font-size: 11.5px;">SPR No: <strong style="color: #020617; font-family: monospace; font-size: 12.5px;">${spr.sprNo}</strong></p>
-            <p style="margin: 2px 0 0 0; color: #334155; font-size: 11.5px;">User ID: <span style="font-family: monospace; font-weight: 600; color: #0f172a;">${spr.preparedByUserId || 'USER-001'}</span></p>
+            <p style="margin: 2px 0 0 0; color: #334155; font-size: 11.5px;">User ID: <span style="font-family: monospace; font-weight: 600; color: #0f172a;">${spr.preparedByUserId || '-'}</span></p>
           </td>
 
           <!-- Center Title & BCIC Logo -->
@@ -278,7 +278,7 @@ export function generateSprHtml(spr: SprRecord): string {
             <div style="height: 105px; display: flex; flex-direction: column; justify-content: space-between; padding: 5px 4px 4px 4px; box-sizing: border-box;">
               <div style="font-weight: bold; font-size: 11px; color: #020617; text-align: center;">প্রস্তুতকারীর সহি</div>
               <div style="font-size: 10px; font-weight: normal; color: #1e293b; line-height: 1.25; text-align: center;">
-                <p style="font-weight: bold; color: #020617; margin: 0; font-size: 10px;">${spr.preparedBy || 'Md. Jalel Ahmed'} (${spr.preparedByUserId || 'USER-001'})</p>
+                <p style="font-weight: bold; color: #020617; margin: 0; font-size: 10px;">${spr.preparedBy || 'Prepared By'} ${spr.preparedByUserId ? `(${spr.preparedByUserId})` : ''}</p>
                 <p style="margin: 2px 0 0 0; font-size: 9.5px; color: #334155;">তাং- ${formattedDate}</p>
               </div>
             </div>
@@ -719,7 +719,7 @@ export function generatePrintableSprDocument(spr: SprRecord): string {
         <td style="width: 25%; vertical-align: top; font-size: 11px; line-height: 1.45; border: none;">
           <p style="font-weight: bold; margin: 0; color: #0f172a;">সূত্র নং- ${spr.refNo || 'টিএসপি/এমপিআইসি (পিএণ্ড) / ------------'}</p>
           <p style="margin: 3px 0 0 0; color: #334155; font-size: 10.5px;">SPR No: <strong style="color: #020617; font-family: monospace; font-size: 11.5px;">${spr.sprNo}</strong></p>
-          <p style="margin: 2px 0 0 0; color: #334155; font-size: 10.5px;">User ID: <span style="font-family: monospace; font-weight: 600; color: #0f172a;">${spr.preparedByUserId || 'USER-001'}</span></p>
+          <p style="margin: 2px 0 0 0; color: #334155; font-size: 10.5px;">User ID: <span style="font-family: monospace; font-weight: 600; color: #0f172a;">${spr.preparedByUserId || '-'}</span></p>
         </td>
 
         <!-- Center Title & Authentic BCIC Logo -->
@@ -839,7 +839,7 @@ export function generatePrintableSprDocument(spr: SprRecord): string {
           <div class="signature-box">
             <div style="font-weight: bold; font-size: 10px; color: #020617;">প্রস্তুতকারীর সহি</div>
             <div style="font-size: 9px; font-weight: normal; color: #1e293b; line-height: 1.25;">
-              <p style="font-weight: bold; color: #020617; margin: 0; font-size: 9px;">${spr.preparedBy || 'Md. Jalel Ahmed'} (${spr.preparedByUserId || 'USER-001'})</p>
+              <p style="font-weight: bold; color: #020617; margin: 0; font-size: 9px;">${spr.preparedBy || 'Prepared By'} ${spr.preparedByUserId ? `(${spr.preparedByUserId})` : ''}</p>
               <p style="margin: 2px 0 0 0; font-size: 8.5px; color: #334155;">তাং- ${formattedDate}</p>
             </div>
           </div>

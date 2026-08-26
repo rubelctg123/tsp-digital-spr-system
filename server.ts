@@ -1726,7 +1726,7 @@ app.get('/api/sprs/:id', (req, res) => {
   res.json(spr);
 });
 
-app.post('/api/sprs', (req, res) => {
+app.post('/api/sprs', async (req, res) => {
   const sprData = req.body;
   const now = new Date().toISOString();
 
@@ -1746,9 +1746,16 @@ app.post('/api/sprs', (req, res) => {
 
   const grandTotal = cleanItems.reduce((sum: number, it: any) => sum + (it.total || 0), 0);
 
+  const preparedBy = (sprData.preparedBy || sprData.prepared_by || '').trim();
+  const preparedByUserId = (sprData.preparedByUserId || sprData.prepared_by_user_id || '').trim();
+  const preparedByEmail = (sprData.preparedByEmail || sprData.prepared_by_email || '').trim();
+
   const newSpr = {
     ...sprData,
     id: sprData.id || `spr_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+    preparedBy,
+    preparedByUserId,
+    preparedByEmail,
     items: cleanItems,
     grandTotal,
     createdAt: now,
@@ -1759,10 +1766,50 @@ app.post('/api/sprs', (req, res) => {
   saveSprsDisk();
   broadcastRealtime({ type: 'SPR_CREATED', payload: newSpr });
 
+  // Sync to Supabase spr_records
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : '';
+    const dbClient = token
+      ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: `Bearer ${token}` } } })
+      : supabaseServer;
+
+    await dbClient.from('spr_records').upsert({
+      id: newSpr.id,
+      spr_no: newSpr.sprNo,
+      ref_no: newSpr.refNo || null,
+      date: newSpr.date,
+      fiscal_year: newSpr.fiscalYear || null,
+      procurement_type: newSpr.procurementType || null,
+      subject: newSpr.subject || null,
+      department: newSpr.department || null,
+      prepared_by: newSpr.preparedBy || null,
+      prepared_by_user_id: newSpr.preparedByUserId || null,
+      prepared_by_email: newSpr.preparedByEmail || null,
+      indentor_name: newSpr.indentorName || null,
+      indentor_designation: newSpr.indentorDesignation || null,
+      estimated_cost: newSpr.estimatedCost || null,
+      budget_code: newSpr.budgetCode || null,
+      justification: newSpr.justification || null,
+      purchase_reason: newSpr.purchaseReason || null,
+      delivery_location: newSpr.deliveryLocation || null,
+      delivery_days: newSpr.deliveryDays || null,
+      grand_total: newSpr.grandTotal,
+      in_words: newSpr.inWords || null,
+      in_words_bn: newSpr.inWordsBn || null,
+      status: newSpr.status || 'submitted',
+      items: JSON.stringify(newSpr.items),
+      created_at: newSpr.createdAt,
+      updated_at: newSpr.updatedAt,
+    });
+  } catch (sbErr) {
+    console.warn('Supabase SPR create sync notice:', sbErr);
+  }
+
   res.status(201).json(newSpr);
 });
 
-app.put('/api/sprs/:id', (req, res) => {
+app.put('/api/sprs/:id', async (req, res) => {
   const { id } = req.params;
   const idx = sprs.findIndex((s) => s.id === id || s.sprNo === id);
   if (idx === -1) return res.status(404).json({ error: 'SPR not found' });
@@ -1782,9 +1829,17 @@ app.put('/api/sprs/:id', (req, res) => {
   });
   const grandTotal = cleanItems.reduce((sum: number, it: any) => sum + (it.total || 0), 0);
 
+  const existing = sprs[idx];
+  const preparedBy = (sprData.preparedBy || sprData.prepared_by || existing.preparedBy || existing.prepared_by || '').trim();
+  const preparedByUserId = (sprData.preparedByUserId || sprData.prepared_by_user_id || existing.preparedByUserId || existing.prepared_by_user_id || '').trim();
+  const preparedByEmail = (sprData.preparedByEmail || sprData.prepared_by_email || existing.preparedByEmail || existing.prepared_by_email || '').trim();
+
   const updated = {
-    ...sprs[idx],
+    ...existing,
     ...sprData,
+    preparedBy,
+    preparedByUserId,
+    preparedByEmail,
     items: cleanItems,
     grandTotal,
     updatedAt: new Date().toISOString(),
@@ -1794,10 +1849,50 @@ app.put('/api/sprs/:id', (req, res) => {
   saveSprsDisk();
   broadcastRealtime({ type: 'SPR_UPDATED', payload: updated });
 
+  // Sync to Supabase spr_records
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : '';
+    const dbClient = token
+      ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: `Bearer ${token}` } } })
+      : supabaseServer;
+
+    await dbClient.from('spr_records').upsert({
+      id: updated.id,
+      spr_no: updated.sprNo,
+      ref_no: updated.refNo || null,
+      date: updated.date,
+      fiscal_year: updated.fiscalYear || null,
+      procurement_type: updated.procurementType || null,
+      subject: updated.subject || null,
+      department: updated.department || null,
+      prepared_by: updated.preparedBy || null,
+      prepared_by_user_id: updated.preparedByUserId || null,
+      prepared_by_email: updated.preparedByEmail || null,
+      indentor_name: updated.indentorName || null,
+      indentor_designation: updated.indentorDesignation || null,
+      estimated_cost: updated.estimatedCost || null,
+      budget_code: updated.budgetCode || null,
+      justification: updated.justification || null,
+      purchase_reason: updated.purchaseReason || null,
+      delivery_location: updated.deliveryLocation || null,
+      delivery_days: updated.deliveryDays || null,
+      grand_total: updated.grandTotal,
+      in_words: updated.inWords || null,
+      in_words_bn: updated.inWordsBn || null,
+      status: updated.status || 'submitted',
+      items: JSON.stringify(updated.items),
+      created_at: updated.createdAt,
+      updated_at: updated.updatedAt,
+    });
+  } catch (sbErr) {
+    console.warn('Supabase SPR update sync notice:', sbErr);
+  }
+
   res.json(updated);
 });
 
-app.delete('/api/sprs/:id', (req, res) => {
+app.delete('/api/sprs/:id', async (req, res) => {
   const { id } = req.params;
   const idx = sprs.findIndex((s) => s.id === id || s.sprNo === id);
   if (idx === -1) return res.status(404).json({ error: 'SPR not found' });
@@ -1805,6 +1900,18 @@ app.delete('/api/sprs/:id', (req, res) => {
   const deleted = sprs.splice(idx, 1)[0];
   saveSprsDisk();
   broadcastRealtime({ type: 'SPR_DELETED', payload: { id: deleted.id } });
+
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : '';
+    const dbClient = token
+      ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: `Bearer ${token}` } } })
+      : supabaseServer;
+
+    await dbClient.from('spr_records').delete().or(`id.eq.${deleted.id},spr_no.eq.${deleted.sprNo}`);
+  } catch (sbErr) {
+    console.warn('Supabase SPR delete notice:', sbErr);
+  }
 
   res.json({ success: true, deleted });
 });

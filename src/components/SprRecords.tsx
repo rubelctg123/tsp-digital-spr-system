@@ -117,12 +117,12 @@ export const SprRecords: React.FC<SprRecordsProps> = ({
   const uniqueUsers = useMemo(() => {
     const map = new Map<string, string>();
     sprList.forEach((s) => {
-      const uid = s.preparedByUserId || currentUser.userId || 'USER-001';
-      const name = s.preparedBy || currentUser.name || 'Md. Jalel Ahmed';
-      map.set(uid, `${name} (${uid})`);
+      if (s.preparedByUserId) {
+        map.set(s.preparedByUserId, `${s.preparedBy || 'User'} (${s.preparedByUserId})`);
+      }
     });
     return Array.from(map.entries());
-  }, [sprList, currentUser]);
+  }, [sprList]);
 
   // Delete Handler
   const handleDelete = async (id: string, sprNo: string) => {
@@ -382,8 +382,8 @@ export const SprRecords: React.FC<SprRecordsProps> = ({
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-slate-900 font-medium">{spr.preparedBy || currentUser.name || 'Md. Jalel Ahmed'}</div>
-                        <div className="font-mono text-[10px] text-slate-500">{spr.preparedByUserId || currentUser.userId || 'USER-001'}</div>
+                        <div className="text-slate-900 font-medium">{spr.preparedBy || 'Md. Rubel Hossain'}</div>
+                        <div className="font-mono text-[10px] text-slate-500">{spr.preparedByUserId || 'USER-002'}</div>
                       </td>
                       <td className="px-4 py-3 text-center font-mono">
                         <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-bold text-[11px]">

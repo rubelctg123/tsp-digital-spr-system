@@ -420,9 +420,9 @@ export const SprForm: React.FC<SprFormProps> = ({
         procurementType,
         subject: subject.trim(),
         department: department.trim(),
-        preparedBy: (initialSpr?.preparedBy || currentUser.name || 'Md. Jalel Ahmed').trim(),
-        preparedByUserId: (initialSpr?.preparedByUserId || currentUser.userId || 'USER-001').trim(),
-        preparedByEmail: (initialSpr?.preparedByEmail || currentUser.email || 'admin@tsp.gov.bd').trim(),
+        preparedBy: (isEditing && initialSpr?.preparedBy ? initialSpr.preparedBy : (currentUser.name || '')).trim(),
+        preparedByUserId: (isEditing && initialSpr?.preparedByUserId ? initialSpr.preparedByUserId : (currentUser.userId || '')).trim(),
+        preparedByEmail: (isEditing && initialSpr?.preparedByEmail ? initialSpr.preparedByEmail : (currentUser.email || '')).trim(),
         items,
         grandTotal,
         inWords,
@@ -541,9 +541,11 @@ export const SprForm: React.FC<SprFormProps> = ({
 
             <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-md border border-slate-200">
               <span className="font-semibold text-slate-800">Prepared By:</span>
-              <span className="font-medium text-slate-900">{currentUser.name}</span>
+              <span className="font-medium text-slate-900">
+                {isEditing && initialSpr?.preparedBy ? initialSpr.preparedBy : currentUser.name}
+              </span>
               <span className="font-mono bg-slate-200 text-slate-800 px-1.5 py-0.5 rounded text-[10.5px]">
-                {currentUser.userId}
+                {isEditing && initialSpr?.preparedByUserId ? initialSpr.preparedByUserId : currentUser.userId}
               </span>
             </div>
           </div>
