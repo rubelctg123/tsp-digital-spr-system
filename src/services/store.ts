@@ -716,6 +716,37 @@ export class AppStore {
             }
           }
 
+          let pBy = (row.prepared_by || row.preparedBy || '').trim();
+          let pUid = (row.prepared_by_user_id || row.preparedByUserId || '').trim();
+          let pEmail = (row.prepared_by_email || row.preparedByEmail || '').trim();
+
+          if (!pBy || !pUid) {
+            const cachedUsers = this.getUsers();
+            if (pUid) {
+              const matched = cachedUsers.find((u) => u.userId?.toLowerCase() === pUid.toLowerCase());
+              if (matched) {
+                pBy = pBy || matched.name;
+                pEmail = pEmail || matched.email;
+              }
+            } else if (pEmail) {
+              const matched = cachedUsers.find((u) => u.email?.toLowerCase() === pEmail.toLowerCase());
+              if (matched) {
+                pBy = pBy || matched.name;
+                pUid = pUid || matched.userId;
+              }
+            }
+            if (!pBy && (row.indentor_name || row.indentorName)) {
+              pBy = (row.indentor_name || row.indentorName).trim();
+              pUid = pUid || 'USER-001';
+            }
+            if (!pBy) {
+              const cur = this.getCurrentUser();
+              pBy = cur?.name || 'Md. Jalel Ahmed';
+              pUid = pUid || cur?.userId || 'USER-001';
+              pEmail = pEmail || cur?.email || 'admin@tsp.gov.bd';
+            }
+          }
+
           return {
             id: row.id ? String(row.id) : (row.spr_no || `spr_${Date.now()}`),
             sprNo: row.spr_no || row.sprNo || 'SPR-2026-00001',
@@ -725,9 +756,9 @@ export class AppStore {
             procurementType: row.procurement_type || row.procurementType || 'local',
             subject: row.subject || '',
             department: row.department || 'Electrical Maintenance',
-            preparedBy: row.prepared_by || row.preparedBy || '',
-            preparedByUserId: row.prepared_by_user_id || row.preparedByUserId || '',
-            preparedByEmail: row.prepared_by_email || row.preparedByEmail || '',
+            preparedBy: pBy,
+            preparedByUserId: pUid,
+            preparedByEmail: pEmail,
             indentorName: row.indentor_name || row.indentorName || '',
             indentorDesignation: row.indentor_designation || row.indentorDesignation || '',
             estimatedCost: row.estimated_cost || row.estimatedCost || '',
@@ -1761,7 +1792,56 @@ export class AppStore {
   public static getSprRecords(): SprRecord[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SPRS);
-      return data ? JSON.parse(data) : [];
+      const list: SprRecord[] = data ? JSON.parse(data) : [];
+      if (!Array.isArray(list)) return [];
+
+      const cachedUsers = this.getUsers();
+      const userMap = new Map<string, User>();
+      cachedUsers.forEach((u) => {
+        if (u.userId) userMap.set(u.userId.toLowerCase(), u);
+        if (u.id) userMap.set(u.id.toLowerCase(), u);
+        if (u.email) userMap.set(u.email.toLowerCase(), u);
+      });
+
+      let modified = false;
+      const repaired = list.map((s) => {
+        let pBy = s.preparedBy ? s.preparedBy.trim() : '';
+        let pUid = s.preparedByUserId ? s.preparedByUserId.trim() : '';
+        let pEmail = s.preparedByEmail ? s.preparedByEmail.trim() : '';
+
+        if (!pBy || !pUid) {
+          if (pUid && userMap.has(pUid.toLowerCase())) {
+            const matched = userMap.get(pUid.toLowerCase())!;
+            pBy = pBy || matched.name;
+            pEmail = pEmail || matched.email;
+          } else if (pEmail && userMap.has(pEmail.toLowerCase())) {
+            const matched = userMap.get(pEmail.toLowerCase())!;
+            pBy = pBy || matched.name;
+            pUid = pUid || matched.userId;
+          } else if (s.indentorName && s.indentorName.trim()) {
+            pBy = s.indentorName.trim();
+            pUid = pUid || 'USER-001';
+          } else {
+            const cur = this.getCurrentUser();
+            pBy = cur?.name || 'Md. Jalel Ahmed';
+            pUid = cur?.userId || 'USER-001';
+            pEmail = cur?.email || 'admin@tsp.gov.bd';
+          }
+          modified = true;
+          return {
+            ...s,
+            preparedBy: pBy,
+            preparedByUserId: pUid,
+            preparedByEmail: pEmail,
+          };
+        }
+        return s;
+      });
+
+      if (modified) {
+        localStorage.setItem(STORAGE_KEYS.SPRS, JSON.stringify(repaired));
+      }
+      return repaired;
     } catch {
       return [];
     }
@@ -1811,16 +1891,27 @@ export class AppStore {
     const inWords = numberToWordsEnglish(grandTotal);
     const inWordsBn = numberToWordsBengali(grandTotal);
 
+    const curUser = this.getCurrentUser();
+    const preparedBy = (sprData.preparedBy || curUser?.name || 'Md. Jalel Ahmed').trim();
+    const preparedByUserId = (sprData.preparedByUserId || curUser?.userId || 'USER-001').trim();
+    const preparedByEmail = (sprData.preparedByEmail || curUser?.email || 'admin@tsp.gov.bd').trim();
+
     const fullSpr: SprRecord = {
       id: targetId,
       sprNo: sprData.sprNo || this.generateNextSprNo(),
+      refNo: sprData.refNo || '',
       date: sprData.date || new Date().toISOString().split('T')[0],
+      fiscalYear: sprData.fiscalYear || '২০২৬-২০২৭ খ্রি.',
+      procurementType: sprData.procurementType || 'স্থানীয়',
+      subject: sprData.subject || 'বৈদ্যুতিক মালামাল ক্রয়',
       department: sprData.department || 'Electrical Maintenance',
+      preparedBy,
+      preparedByUserId,
+      preparedByEmail,
       indentorName: sprData.indentorName || '',
       indentorDesignation: sprData.indentorDesignation || '',
       estimatedCost: sprData.estimatedCost || '',
       budgetCode: sprData.budgetCode || '',
-      procurementType: sprData.procurementType || 'revenue',
       justification: sprData.justification || '',
       purchaseReason: sprData.purchaseReason || '',
       deliveryLocation: sprData.deliveryLocation || 'Central Store, TSPCL',
@@ -1829,7 +1920,7 @@ export class AppStore {
       grandTotal,
       inWords,
       inWordsBn,
-      status: sprData.status || 'draft',
+      status: sprData.status || 'submitted',
       createdAt: sprData.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -1859,13 +1950,19 @@ export class AppStore {
       await supabase.from('spr_records').upsert({
         id: savedSpr.id,
         spr_no: savedSpr.sprNo,
+        ref_no: savedSpr.refNo,
         date: savedSpr.date,
+        fiscal_year: savedSpr.fiscalYear,
+        procurement_type: savedSpr.procurementType,
+        subject: savedSpr.subject,
         department: savedSpr.department,
+        prepared_by: savedSpr.preparedBy,
+        prepared_by_user_id: savedSpr.preparedByUserId,
+        prepared_by_email: savedSpr.preparedByEmail,
         indentor_name: savedSpr.indentorName,
         indentor_designation: savedSpr.indentorDesignation,
         estimated_cost: savedSpr.estimatedCost,
         budget_code: savedSpr.budgetCode,
-        procurement_type: savedSpr.procurementType,
         justification: savedSpr.justification,
         purchase_reason: savedSpr.purchaseReason,
         delivery_location: savedSpr.deliveryLocation,
