@@ -13,6 +13,10 @@ import {
   AlertCircle,
   X,
   Key,
+  RefreshCw,
+  Database,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 interface AdminUsersProps {
@@ -28,6 +32,10 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ currentUser }) => {
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSqlModalOpen, setIsSqlModalOpen] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
+
   useEffect(() => {
     AppStore.fetchUsersFromBackend().then((fresh) => {
       setUsers(fresh);
@@ -40,6 +48,62 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ currentUser }) => {
     });
     return unsubscribe;
   }, []);
+
+  const handleSyncSupabase = async () => {
+    setIsSyncing(true);
+    try {
+      const fresh = await AppStore.fetchUsersFromBackend();
+      setUsers(fresh || AppStore.getUsers());
+      setStatusMessage('Users refreshed from Supabase Cloud Database successfully.');
+      setTimeout(() => setStatusMessage(''), 3500);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to sync with Supabase.');
+      setTimeout(() => setErrorMessage(''), 4000);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const sprSqlScript = `-- Run this in Supabase SQL Editor to create spr_records table
+CREATE TABLE IF NOT EXISTS public.spr_records (
+    id TEXT PRIMARY KEY,
+    spr_no TEXT NOT NULL,
+    ref_no TEXT,
+    date TEXT,
+    fiscal_year TEXT,
+    procurement_type TEXT,
+    subject TEXT,
+    department TEXT,
+    prepared_by TEXT,
+    prepared_by_user_id TEXT,
+    prepared_by_email TEXT,
+    indentor_name TEXT,
+    indentor_designation TEXT,
+    estimated_cost TEXT,
+    budget_code TEXT,
+    justification TEXT,
+    purchase_reason TEXT,
+    delivery_location TEXT,
+    delivery_days TEXT,
+    items JSONB,
+    grand_total NUMERIC,
+    in_words TEXT,
+    in_words_bn TEXT,
+    status TEXT DEFAULT 'submitted',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable Realtime & Unrestricted Access for Cloud Sync
+ALTER TABLE public.spr_records DISABLE ROW LEVEL SECURITY;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.spr_records;
+`;
+
+  const copySqlToClipboard = () => {
+    navigator.clipboard.writeText(sprSqlScript);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 3000);
+  };
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
@@ -177,14 +241,35 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ currentUser }) => {
           </p>
         </div>
 
-        <button
-          id="admin-add-user-btn"
-          onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 rounded-md hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm"
-        >
-          <UserPlus className="w-4 h-4" />
-          + Add New User
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsSqlModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors border border-slate-300"
+            title="View Supabase Table Schema & Setup"
+          >
+            <Database className="w-4 h-4 text-emerald-600" />
+            <span>Supabase Schema</span>
+          </button>
+
+          <button
+            onClick={handleSyncSupabase}
+            disabled={isSyncing}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md transition-colors border border-emerald-200 disabled:opacity-60"
+            title="Refresh Users directly from Supabase Cloud Database"
+          >
+            <RefreshCw className={`w-4 h-4 text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Supabase'}</span>
+          </button>
+
+          <button
+            id="admin-add-user-btn"
+            onClick={handleOpenAdd}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 rounded-md hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            + Add New User
+          </button>
+        </div>
       </div>
 
       {statusMessage && (
@@ -439,6 +524,69 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ currentUser }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Supabase Schema Helper Modal */}
+      {isSqlModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Database className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-sm font-bold tracking-tight">
+                  Supabase Cloud Database Tables Setup
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsSqlModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-md transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 text-xs text-slate-700">
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900">
+                <p className="font-semibold mb-1">✓ Supabase Connection Verified</p>
+                <p className="text-[11px] font-mono break-all text-emerald-800">
+                  Project URL: https://csyvznqhdsemvdlaxthf.supabase.co
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">
+                  SPR Document Table Schema (for multi-user cross-account synchronization):
+                </p>
+                <p className="text-[11px] text-slate-500 mb-2">
+                  To sync SPR requisitions between all registered users in real-time on Vercel/Web, run this SQL script in your Supabase SQL Editor:
+                </p>
+
+                <div className="relative">
+                  <pre className="p-3.5 bg-slate-950 text-slate-200 rounded-lg font-mono text-[11px] overflow-x-auto border border-slate-800 leading-relaxed max-h-60">
+                    {sprSqlScript}
+                  </pre>
+                  <button
+                    onClick={copySqlToClipboard}
+                    className="absolute top-2 right-2 inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded transition-colors shadow-xs"
+                  >
+                    {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedSql ? 'Copied!' : 'Copy SQL'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsSqlModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

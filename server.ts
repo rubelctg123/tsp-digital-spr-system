@@ -5,7 +5,7 @@ import { createServer as createViteServer } from 'vite';
 import { createClient } from '@supabase/supabase-js';
 import { TSP_254_MATERIALS } from './src/services/materialsDataset';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://csyvzflqndsemvuldxth.supabase.co';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://csyvznqhdsemvdlaxthf.supabase.co';
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_cZxEACjIUe-4BKASg91NTw_Uxt7upFX';
 const supabaseServer = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

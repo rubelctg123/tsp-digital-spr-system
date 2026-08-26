@@ -637,7 +637,7 @@ export class AppStore {
       }
     }
 
-    // 2. Supabase Realtime Postgres Changes for both materials and profiles
+    // 2. Supabase Realtime Postgres Changes for materials, profiles, and spr_records
     try {
       if (this.realtimeChannel) {
         this.realtimeChannel.unsubscribe();
@@ -661,10 +661,18 @@ export class AppStore {
             this.fetchUsersFromBackend();
           }
         )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'spr_records' },
+          (payload) => {
+            console.log('[Supabase Realtime] SPR record changed:', payload.eventType);
+            this.fetchSprsFromBackend();
+          }
+        )
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             this.syncStatus = 'connected';
-            console.log('[Supabase Realtime] Subscribed to public.materials and public.profiles');
+            console.log('[Supabase Realtime] Subscribed to materials, profiles, and spr_records');
           }
         });
     } catch (err) {
@@ -688,11 +696,70 @@ export class AppStore {
   }
 
   public static async fetchSprsFromBackend(): Promise<SprRecord[]> {
+    // 1. Direct Supabase 'spr_records' table fetch
+    try {
+      const { data: supaSprs, error: supaErr } = await supabase
+        .from('spr_records')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!supaErr && supaSprs && supaSprs.length > 0) {
+        const mappedList: SprRecord[] = supaSprs.map((row: any) => {
+          let parsedItems: SprItem[] = [];
+          if (Array.isArray(row.items)) {
+            parsedItems = row.items;
+          } else if (typeof row.items === 'string') {
+            try {
+              parsedItems = JSON.parse(row.items);
+            } catch {
+              parsedItems = [];
+            }
+          }
+
+          return {
+            id: row.id ? String(row.id) : (row.spr_no || `spr_${Date.now()}`),
+            sprNo: row.spr_no || row.sprNo || 'SPR-2026-00001',
+            refNo: row.ref_no || row.refNo || '',
+            date: row.date || new Date().toISOString().split('T')[0],
+            fiscalYear: row.fiscal_year || row.fiscalYear || '',
+            procurementType: row.procurement_type || row.procurementType || 'local',
+            subject: row.subject || '',
+            department: row.department || 'Electrical Maintenance',
+            preparedBy: row.prepared_by || row.preparedBy || '',
+            preparedByUserId: row.prepared_by_user_id || row.preparedByUserId || '',
+            preparedByEmail: row.prepared_by_email || row.preparedByEmail || '',
+            indentorName: row.indentor_name || row.indentorName || '',
+            indentorDesignation: row.indentor_designation || row.indentorDesignation || '',
+            estimatedCost: row.estimated_cost || row.estimatedCost || '',
+            budgetCode: row.budget_code || row.budgetCode || '',
+            justification: row.justification || row.justification || '',
+            purchaseReason: row.purchase_reason || row.purchaseReason || '',
+            deliveryLocation: row.delivery_location || row.deliveryLocation || 'Central Store, TSPCL',
+            deliveryDays: row.delivery_days || row.deliveryDays || '30',
+            items: parsedItems,
+            grandTotal: Number(row.grand_total ?? row.grandTotal ?? 0),
+            inWords: row.in_words || row.inWords || '',
+            inWordsBn: row.in_words_bn || row.inWordsBn || '',
+            status: row.status || 'submitted',
+            createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+            updatedAt: row.updated_at || row.updatedAt || new Date().toISOString(),
+          };
+        });
+
+        localStorage.setItem(STORAGE_KEYS.SPRS, JSON.stringify(mappedList));
+        this.broadcast({ type: 'SPR_UPDATED', payload: mappedList });
+        return mappedList;
+      }
+    } catch (supaEx) {
+      console.warn('Direct Supabase fetch SPRs exception:', supaEx);
+    }
+
+    // 2. Fallback to server API if running with custom Express server
     try {
       const res = await fetch('/api/sprs');
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           localStorage.setItem(STORAGE_KEYS.SPRS, JSON.stringify(data));
           this.broadcast({ type: 'SPR_UPDATED', payload: data });
           return data;
@@ -701,6 +768,7 @@ export class AppStore {
     } catch (err) {
       console.warn('Could not fetch SPRs from API:', err);
     }
+
     return this.getSprRecords();
   }
 
@@ -1058,8 +1126,19 @@ export class AppStore {
     }
 
     // 2. Direct Supabase 'profiles' table insertion (Single Source of Truth)
-    const newUserId = `USER-${Math.floor(100 + Math.random() * 900)}`;
+    const existingUsers = this.getUsers();
+    let maxNum = 8;
+    existingUsers.forEach((u) => {
+      if (u.userId && u.userId.startsWith('USER-')) {
+        const n = parseInt(u.userId.replace('USER-', ''), 10);
+        if (!isNaN(n) && n > maxNum) maxNum = n;
+      }
+    });
+    const newUserId = `USER-${String(maxNum + 1).padStart(3, '0')}`;
+    const profileId = authUserId || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
     const profilePayload: any = {
+      id: profileId,
       user_id: newUserId,
       username: cleanUsername,
       name: name.trim(),
