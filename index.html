@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TSP Complex Ltd. - Digital SPR System</title>
+    <meta name="description" content="Store Purchase Requisition (SPR) & Material Master Management System for TSP Complex Ltd." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+      // Defensive guard against packages/polyfills attempting to assign to getter-only window.fetch
+      (function() {
+        try {
+          var origFetch = window.fetch;
+          if (origFetch) {
+            var currentFetch = origFetch;
+            Object.defineProperty(window, 'fetch', {
+              get: function() { return currentFetch; },
+              set: function(fn) { currentFetch = fn; },
+              configurable: true,
+              enumerable: true
+            });
+          }
+        } catch (e) {
+          // ignore if non-configurable
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

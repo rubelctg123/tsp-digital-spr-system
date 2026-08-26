@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-100 text-slate-900 antialiased font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Authentic TSP SPR Table Border System */
+.spr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  line-height: 1.4;
+  table-layout: fixed;
+}
+
+.spr-table th,
+.spr-table td {
+  border: 1px solid #1e293b;
+  padding: 5px 6px;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.spr-table th {
+  background-color: #f1f5f9;
+  font-weight: 600;
+  text-align: center;
+  color: #0f172a;
+}
+
+.spr-table input,
+.spr-table select,
+.spr-table textarea {
+  font-size: 12px;
+}
+
+/* Print Specific Rules for Official Legal Paper (Landscape 14in x 8.5in) */
+@media print {
+  @page {
+    size: 14in 8.5in;
+    margin: 7mm;
+  }
+
+  html,
+  body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #root,
+  #root > div,
+  main {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    display: block !important;
+  }
+
+  .print-document {
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  /* Hide app navigation, header, sidebar, buttons, and notifications during printing */
+  .no-print,
+  header:not(#spr-print-container header),
+  aside,
+  nav,
+  footer,
+  button,
+  .app-header,
+  .app-sidebar,
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  #spr-print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* Table rules for smooth multi-page printing on Legal Paper */
+  .spr-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  .spr-table thead {
+    display: table-header-group !important;
+  }
+
+  .spr-table tbody tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .spr-signature-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-top: 12px !important;
+  }
+
+  .spr-table th,
+  .spr-table td {
+    border: 1px solid #0f172a !important;
+    color: #020617 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .spr-table th {
+    background-color: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+

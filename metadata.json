@@ -1,0 +1,6 @@
+{
+  "name": "TSP Digital SPR System",
+  "description": "Web-based Store Purchase Requisition (SPR) entry, storage, management, and document generation system for TSP Complex Ltd. (BCIC)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
